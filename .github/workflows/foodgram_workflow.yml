@@ -24,8 +24,8 @@ jobs:
         pytest
 
     - name: send message
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_TO }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          message: ${{join(steps.run_tests.outputs.*, '\n')}}
+      uses: appleboy/telegram-action@master
+      with:
+        to: ${{ secrets.TELEGRAM_TO }}
+        token: ${{ secrets.TELEGRAM_TOKEN }}
+        message: ${{join(steps.run_tests.outputs.*, '\n')}}
