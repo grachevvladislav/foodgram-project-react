@@ -115,13 +115,6 @@ SIMPLE_JWT = {
 
 AUTH_USER_MODEL = 'users.User'
 
-EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
-EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'sent_emails')
-
-CONFIRMATION_CODE_SET = string.ascii_uppercase + string.digits
-CONFIRMATION_CODE_LENGTH = 6
-
-FROM_EMAIL = 'admin@yamdb.fake'
 EMAIL_MAX_LENGTH = 254
 USERNAME_MAX_LENGTH = 150
 

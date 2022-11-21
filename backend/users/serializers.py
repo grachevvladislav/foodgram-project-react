@@ -8,7 +8,11 @@ class UserSerializer(serializers.ModelSerializer, UsernameMixins):
     class Meta:
         model = User
         fields = ('email', 'id', 'username', 'first_name', 'last_name',)
-        #optional_fields = ('first_name', 'last_name', 'bio', 'role')
+
+
+class LoginSerializer(serializers.Serializer):
+    password = serializers.CharField()
+    email = serializers.EmailField()
 
 
 class MeUserSerializer(UserSerializer, UsernameMixins):
