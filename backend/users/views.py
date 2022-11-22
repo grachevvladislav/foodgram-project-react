@@ -6,18 +6,22 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework.mixins import ListModelMixin, CreateModelMixin
 
+from .tokens import JWTAccessToken
 from .models import User
-from .permissions import IsAdmin
-from .serializers import LoginSerializer, MeUserSerializer, UserSerializer
+from .serializers import (
+    LoginSerializer, MeUserSerializer, UserSerializer, PasswordSerializer
+)
+
 
 WRONG_DATA = 'Неправильный email или пароль!'
+WRONG_PASSWORD = 'Неправильный пароль!'
 
 
-class UsersViewSet(viewsets.ModelViewSet):
+class UsersViewSet(ListModelMixin, CreateModelMixin, viewsets.GenericViewSet):
     serializer_class = UserSerializer
-    permission_classes = (IsAdmin,)
+    permission_classes = (AllowAny,)
     queryset = User.objects.all()
     lookup_field = 'id'
 
@@ -29,7 +33,7 @@ def get_token_view(request):
     serializer.is_valid(raise_exception=True)
     user = get_object_or_404(User, email=serializer.data['email'])
     if check_password(serializer.data['password'], user.password):
-        token = AccessToken.for_user(user)
+        token = JWTAccessToken.for_user(user)
         return JsonResponse(
             {"auth_token": str(token)},
             status=status.HTTP_200_OK
@@ -49,4 +53,22 @@ def me_view(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def set_password(request):
-    pass
+    serializer = PasswordSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    if check_password(
+        serializer.data['current_password'],
+        request.user.password
+    ):
+        request.user.set_password(serializer.data['new_password'])
+        request.user.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    raise ValidationError(WRONG_PASSWORD)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def del_token_view(request):
+    token = JWTAccessToken(request.headers.get('Authorization').split(' ', 1)[1])
+    token.blacklist()
+    print(request.headers)
+    return Response(status=status.HTTP_204_NO_CONTENT)

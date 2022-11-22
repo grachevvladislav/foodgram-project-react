@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
 ]
 
 MIDDLEWARE = [
@@ -109,6 +110,7 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
+    'AUTH_TOKEN_CLASSES': ('users.tokens.JWTAccessToken',),
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }

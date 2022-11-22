@@ -18,3 +18,8 @@ class LoginSerializer(serializers.Serializer):
 class MeUserSerializer(UserSerializer, UsernameMixins):
     class Meta(UserSerializer.Meta):
         read_only_fields = ('role',)
+
+
+class PasswordSerializer(serializers.Serializer):
+    new_password = serializers.CharField()
+    current_password = serializers.CharField()

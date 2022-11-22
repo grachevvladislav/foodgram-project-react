@@ -7,3 +7,12 @@ class IsAdmin(permissions.BasePermission):
     """
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.is_superuser
+
+
+class IsAdminOrPost(permissions.BasePermission):
+    """
+    Полный доступ только для администратора,
+    POST запросы для всех пользователей
+    """
+    def has_permission(self, request, view):
+        return request.method == 'POST' or request.user.is_superuser
