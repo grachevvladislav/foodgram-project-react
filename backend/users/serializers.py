@@ -23,3 +23,10 @@ class MeUserSerializer(UserSerializer, UsernameMixins):
 class PasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField()
     current_password = serializers.CharField()
+
+
+class SubscriptionsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('email', 'id', 'username', 'first_name', 'last_name')
+        #read_only_fields = fields
