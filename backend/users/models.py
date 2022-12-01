@@ -23,6 +23,10 @@ class User(AbstractUser):
     first_name = models.CharField('Имя', max_length=150, blank=True)
     last_name = models.CharField('Фамилия', max_length=150, blank=True)
 
+    class Meta:
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
+
 
 class Follow(models.Model):
     user = models.ForeignKey(
@@ -41,6 +45,8 @@ class Follow(models.Model):
             raise ValidationError(SELF_FOLLOW)
 
     class Meta:
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'author'],

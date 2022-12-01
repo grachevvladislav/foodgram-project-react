@@ -1,4 +1,4 @@
-from django.contrib.auth.hashers import check_password
+from django.contrib.auth.hashers import check_password, make_password
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
@@ -18,10 +18,9 @@ from django.db import IntegrityError
 from .tokens import JWTAccessToken
 from .models import User, Follow
 from .serializers import (
-    LoginSerializer, MeUserSerializer, UserSerializer, PasswordSerializer,
+    LoginSerializer, UserSerializer, PasswordSerializer,
     SubscriptionsSerializer
 )
-from .pagination import QueryParamPagination
 
 
 WRONG_DATA = 'Неправильный email или пароль!'
@@ -36,6 +35,12 @@ class UsersViewSet(
     permission_classes = (AllowAny,)
     queryset = User.objects.all()
     lookup_field = 'id'
+
+    def perform_create(self, serializer):
+        serializer.validated_data['password'] = make_password(
+            serializer.validated_data['password']
+        )
+        serializer.save()
 
 
 @api_view(['POST'])
@@ -57,7 +62,7 @@ def get_token_view(request):
 @permission_classes([IsAuthenticated])
 def me_view(request):
     return Response(
-        MeUserSerializer(request.user).data,
+        UserSerializer(request.user).data,
         status=status.HTTP_200_OK
     )
 
@@ -97,8 +102,8 @@ class SubscriptionsView(APIView, LimitOffsetPagination):
         author = get_object_or_404(User, id=kwargs.get('id'))
         follow = Follow(user=request.user, author=author)
         try:
-            # follow.full_clean()
-            # follow.save()
+            follow.full_clean()
+            follow.save()
             pass
         except ValidationError_db as e:
             return JsonResponse(
