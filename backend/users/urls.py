@@ -5,12 +5,10 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     UsersViewSet, SubscriptionsView,
     get_token_view, del_token_view,
-    me_view, set_password
+    me_view, set_password, SubscribeView
 )
 
 router = DefaultRouter()
-#router.register('<int:id>/subscriptions/', SubscriptionsViewSet,
-# basename='subscriptions')
 router.register('', UsersViewSet, basename='users')
 
 urlpatterns = [
@@ -20,7 +18,12 @@ urlpatterns = [
     path('api/users/me/', me_view, name='me'),
     path('api/users/set_password/', set_password, name='set_password'),
     path(
-        'api/users/<int:id>/subscriptions/',
+        'api/users/<int:id>/subscribe/',
+        SubscribeView.as_view(),
+        name='subscribe'
+    ),
+    path(
+        'api/users/subscriptions/',
         SubscriptionsView.as_view(),
         name='subscriptions'
     ),

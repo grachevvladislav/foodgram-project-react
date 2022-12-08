@@ -6,7 +6,7 @@ from .models import User, Follow
 @admin.register(User)
 class UserClass(admin.ModelAdmin):
     list_display = (
-        'username', 'email', 'first_name', 'last_name',
+        'id', 'username', 'email', 'first_name', 'last_name',
         'is_superuser'
     )
     list_filter = ('is_superuser',)
