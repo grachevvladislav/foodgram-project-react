@@ -96,14 +96,6 @@ def del_token_view(request):
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-def get_follows(request):
-    user_follows = Follow.objects.filter(user=request.user.id)
-    authors = []
-    for follow in user_follows:
-        authors.append(follow.author)
-    return authors
-
-
 class SubscribeView(APIView):
     def post(self, request, **kwargs):
         author = get_object_or_404(User, id=kwargs.get('id'))
@@ -135,7 +127,10 @@ class SubscribeView(APIView):
 
 class SubscriptionsView(APIView, LimitOffsetPagination):
     def get(self, request):
-        authors = get_follows(request)
+        user_follows = Follow.objects.filter(user=request.user.id)
+        authors = []
+        for follow in user_follows:
+            authors.append(follow.author)
         results = self.paginate_queryset(authors, request, view=self)
         serializer = UserRecipeSerializer(results, many=True)
         return self.get_paginated_response(serializer.data)

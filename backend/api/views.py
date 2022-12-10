@@ -5,7 +5,6 @@ from rest_framework.viewsets import GenericViewSet
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
-from rest_framework.exceptions import ValidationError
 from django.core.exceptions import ValidationError as ValidationError_db
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse
@@ -25,7 +24,7 @@ from django.http import FileResponse
 from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus.tables import TableStyle, colors
 
 from reportlab.platypus.tables import Table
@@ -44,11 +43,14 @@ class TagsViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
     lookup_field = 'id'
 
 
-class RecipesViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
+class RecipesViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
     permission_classes = (OwnerOrReadOnly,)
     queryset = Recipe.objects.all()
     lookup_field = 'id'
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
 
 
 class IngredientViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
@@ -119,25 +121,46 @@ class ShoppingCartView(APIView):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def download_shopping_cart(request):
+    data = [['Название', 'Количество'],]
+    user_shopping_cart = Shopping_cart.objects.filter(user=request.user.id)
+    ingredients_dict = {}
+    for recipe in user_shopping_cart:
+        for ingredient in recipe.recipes.ingredients.all():
+            if ingredient.ingredient.id in ingredients_dict:
+                ingredients_dict[ingredient.ingredient.id] = [
+                    ingredient.ingredient.name,
+                    ingredient.amount + ingredients_dict[
+                        ingredient.ingredient.id
+                    ][1],
+                    ingredient.ingredient.measurement_unit
+                ]
+            else:
+                ingredients_dict[ingredient.ingredient.id] = [
+                    ingredient.ingredient.name,
+                    ingredient.amount,
+                    ingredient.ingredient.measurement_unit
+                ]
+    for key, value in ingredients_dict.items():
+        data.append([value[0], f'{value[1]} {value[2]}'])
     buffer = io.BytesIO()
-    my_data = [['ID', 'Name', 'Class', 'Mark', 'Gender'],
-               (1, 'John Deo', 'Four', 75, 'female'),
-               (2, 'Max Ruin', 'Three', 85, 'male'),
-               (3, 'Arnold', 'Three', 55, 'male')]
-
-    my_doc = SimpleDocTemplate(buffer, pagesize=A4)
-    c_width = [0.4 * inch, 1.5 * inch, 1 * inch, 1 * inch, 1 * inch]
-    table = Table(my_data, rowHeights=20, repeatRows=1, colWidths=c_width)
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    c_width = [4 * inch, 3 * inch]
+    text = 'Список покупок пользователя ' + request.user.username
+    styles = getSampleStyleSheet()
+    pdfmetrics.registerFont(
+        TTFont('timesnewromanpsmt', 'api/timesnewromanpsmt.ttf')
+    )
+    styles['Title'].fontName = 'timesnewromanpsmt'
+    table = Table(data, rowHeights=20, repeatRows=1, colWidths=c_width)
     table.setStyle(
         TableStyle(
             [
                 ('BACKGROUND', (0, 0), (-1, 0), colors.lightgreen),
+                ('FONTNAME', (0, 0), (-1, -1), 'timesnewromanpsmt'),
                 ('FONTSIZE', (0, 0), (-1, -1), 10)
             ]
         )
     )
-    text = 'Список покупок пользователя ' + request.user.username
-    styles = getSampleStyleSheet()
-    my_doc.build([Paragraph(text, styles['Justify']), table])
+    doc.build([Paragraph(text, styles['Title']), table])
     buffer.seek(0)
     return FileResponse(buffer, as_attachment=True, filename=text + '.pdf')
