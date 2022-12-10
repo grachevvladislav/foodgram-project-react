@@ -1,8 +1,9 @@
 from rest_framework import serializers
 
-from .mixins import UsernameMixins
-from .models import User, Follow
 from api.models import Recipe
+
+from .mixins import UsernameMixins
+from .models import Follow, User
 
 
 class UserPostSerializer(serializers.ModelSerializer, UsernameMixins):

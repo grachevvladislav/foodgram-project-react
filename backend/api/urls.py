@@ -1,10 +1,8 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from .views import (
-    TagsViewSet, RecipesViewSet, IngredientViewSet,
-    FavouritesView, ShoppingCartView, download_shopping_cart
-)
+from .views import (FavouritesView, IngredientViewSet, RecipesViewSet,
+                    ShoppingCartView, TagsViewSet, download_shopping_cart)
 
 router = DefaultRouter()
 router.register('tags', TagsViewSet, basename='tags')
@@ -22,6 +20,10 @@ urlpatterns = [
         ShoppingCartView.as_view(),
         name='shopping_cart'
     ),
-    path('recipes/download_shopping_cart/', download_shopping_cart, name='download_shopping_cart'),
+    path(
+        'recipes/download_shopping_cart/',
+        download_shopping_cart,
+        name='download_shopping_cart'
+    ),
     path('', include(router.urls)),
 ]

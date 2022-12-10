@@ -1,44 +1,35 @@
-from rest_framework.mixins import (
-    ListModelMixin, RetrieveModelMixin
-)
-from rest_framework.viewsets import GenericViewSet
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.views import APIView
-from django.shortcuts import get_object_or_404
-from django.core.exceptions import ValidationError as ValidationError_db
-from django.core.exceptions import ObjectDoesNotExist
-from django.http import JsonResponse
-from rest_framework import status, viewsets
-from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
-
-from .serializers import (
-    TagsSerializer, RecipeSerializer, IngredientSerializer,
-    RecipeSmallSerializer
-)
-from .models import Tag, Recipe, Ingredient, Favourites, Shopping_cart
-from .permissions import OwnerOrReadOnly
-
 import io
-from django.http import FileResponse
-from reportlab.lib.units import inch
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus.tables import TableStyle, colors
 
-from reportlab.platypus.tables import Table
+from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ValidationError as ValidationError_db
+from django.http import FileResponse, JsonResponse
+from django.shortcuts import get_object_or_404
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.platypus import Paragraph, SimpleDocTemplate
+from reportlab.platypus.tables import Table, TableStyle, colors
+from rest_framework import status, viewsets
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.viewsets import GenericViewSet
 
-
+from .models import Favourites, Ingredient, Recipe, Shopping_cart, Tag
+from .permissions import OwnerOrReadOnly
+from .serializers import (IngredientSerializer, RecipeSerializer,
+                          RecipeSmallSerializer, TagsSerializer)
 
 UNFAVORIT_ERROR = 'Этого рецепта нет в избранных!'
 
 
 class TagsViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
     serializer_class = TagsSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (AllowAny,)
     queryset = Tag.objects.all()
     lookup_field = 'id'
 
@@ -55,12 +46,14 @@ class RecipesViewSet(viewsets.ModelViewSet):
 
 class IngredientViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
     serializer_class = IngredientSerializer
-    permission_classes = (OwnerOrReadOnly,)
+    permission_classes = (AllowAny,)
     queryset = Ingredient.objects.all()
     lookup_field = 'id'
 
 
 class FavouritesView(APIView):
+    permission_classes = [OwnerOrReadOnly]
+
     def post(self, request, **kwargs):
         recipe = get_object_or_404(Recipe, id=kwargs.get('id'))
         follow = Favourites(user=request.user, recipes=recipe)
@@ -90,6 +83,8 @@ class FavouritesView(APIView):
 
 
 class ShoppingCartView(APIView):
+    permission_classes = [OwnerOrReadOnly]
+
     def post(self, request, **kwargs):
         recipe = get_object_or_404(Recipe, id=kwargs.get('id'))
         follow = Shopping_cart(user=request.user, recipes=recipe)

@@ -60,7 +60,7 @@ class Recipe(models.Model):
         related_name='author',
     )
     name = models.TextField('Название', max_length=256)
-    image = models.ImageField('Картинка', upload_to='recipes/', blank=True)
+    image = models.ImageField('Картинка', upload_to='recipes/')
     text = models.TextField('Описание', max_length=1000)
     сooking_time = models.IntegerField('Время приготовления в минутах')
     tags = models.ManyToManyField(Tag)

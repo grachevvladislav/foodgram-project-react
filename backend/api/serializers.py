@@ -1,12 +1,13 @@
-from rest_framework import serializers
-from django.core.files.base import ContentFile
 import base64
+
+from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
+from rest_framework import serializers
 
 from users.serializers import UserSerializer
-from .models import (
-    Tag, Recipe, Ingredient, IngredientAmount, Favourites, Shopping_cart
-)
+
+from .models import (Favourites, Ingredient, IngredientAmount, Recipe,
+                     Shopping_cart, Tag)
 
 
 class TagsSerializer(serializers.ModelSerializer):
@@ -93,25 +94,22 @@ class RecipeSerializer(serializers.ModelSerializer):
             recipe.ingredients.add(ingredient)
         return recipe
 
-
-
-    # def update(self, instance, validated_data):
-    #     instance.name = validated_data.get('name', instance.name)
-    #     instance.text = validated_data.get('text', instance.text)
-    #     instance.image = validated_data.get('image', instance.image)
-    #     instance.сooking_time = validated_data.get(
-    #         'сooking_time', instance.сooking_time
-    #     )
-    #     instance.author_id = self.context.get("request").user.id
-    #     print(11111111111111111111111111111111111111)
-    #     tags_data = validated_data.pop('tags')
-    #     lst = []
-    #     for tag_id in tags_data:
-    #         current_tag = Tag.objects.get(id=tag_id)
-    #         lst.append(current_tag)
-    #     instance.tags.set(lst)
-    #     instance.save()
-    #     return instance
+    def update(self, instance, validated_data):
+        instance.name = validated_data.get('name', instance.name)
+        instance.text = validated_data.get('text', instance.text)
+        instance.image = validated_data.get('image', instance.image)
+        instance.сooking_time = validated_data.get(
+            'сooking_time', instance.сooking_time
+        )
+        ingredients_data = validated_data.pop('ingredients')
+        tags_data = validated_data.pop('tags')
+        instance.tags.clear()
+        instance.ingredients.clear()
+        for tag in tags_data:
+            instance.tags.add(tag)
+        for ingredient in ingredients_data:
+            instance.ingredients.add(ingredient)
+        return instance
 
     def get_is_favorited(self, recipe):
         user = self.context.get('request', None).user

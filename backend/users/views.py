@@ -1,25 +1,24 @@
 from django.contrib.auth.hashers import check_password, make_password
+from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ValidationError as ValidationError_db
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ValidationError
-from django.core.exceptions import ValidationError as ValidationError_db
-from django.core.exceptions import ObjectDoesNotExist
+from rest_framework.mixins import (CreateModelMixin, ListModelMixin,
+                                   RetrieveModelMixin)
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.mixins import (
-    ListModelMixin, CreateModelMixin, RetrieveModelMixin
-)
 from rest_framework.views import APIView
-from rest_framework.pagination import LimitOffsetPagination
-from .tokens import JWTAccessToken
-from .models import User, Follow
-from .serializers import (
-    LoginSerializer, UserSerializer, PasswordSerializer,
-    UserPostSerializer, UserRecipeSerializer
-)
 
+from .models import Follow, User
+from .permissions import IsSafeOrPost
+from .serializers import (LoginSerializer, PasswordSerializer,
+                          UserPostSerializer, UserRecipeSerializer,
+                          UserSerializer)
+from .tokens import JWTAccessToken
 
 WRONG_DATA = 'Неправильный email или пароль!'
 WRONG_PASSWORD = 'Неправильный пароль!'
@@ -30,7 +29,7 @@ class UsersViewSet(
     ListModelMixin, CreateModelMixin, RetrieveModelMixin,
     viewsets.GenericViewSet
 ):
-    permission_classes = (AllowAny,)
+    permission_classes = (IsSafeOrPost,)
     queryset = User.objects.all()
     lookup_field = 'id'
 
@@ -97,6 +96,8 @@ def del_token_view(request):
 
 
 class SubscribeView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request, **kwargs):
         author = get_object_or_404(User, id=kwargs.get('id'))
         follow = Follow(user=request.user, author=author)
@@ -126,6 +127,8 @@ class SubscribeView(APIView):
 
 
 class SubscriptionsView(APIView, LimitOffsetPagination):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         user_follows = Follow.objects.filter(user=request.user.id)
         authors = []

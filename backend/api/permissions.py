@@ -7,9 +7,6 @@ class OwnerOrReadOnly(permissions.BasePermission):
     POST - для авторизованных пользователей
     PATCH, DEL - для автора
     """
-    # def has_permission(self, request, view):
-    #     return request.method == 'GET'
-
     def has_object_permission(self, request, view, obj):
         return obj.author == request.user or (request.method in
                                               permissions.SAFE_METHODS)
