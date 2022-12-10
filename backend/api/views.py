@@ -18,6 +18,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
+from rest_framework import filters
+from django_filters.rest_framework import DjangoFilterBackend
+
+from users.models import User
 
 from .models import Favourites, Ingredient, Recipe, Shopping_cart, Tag
 from .permissions import OwnerOrReadOnly
@@ -29,6 +33,7 @@ UNFAVORIT_ERROR = 'Этого рецепта нет в избранных!'
 
 class TagsViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
     serializer_class = TagsSerializer
+    pagination_class = None
     permission_classes = (AllowAny,)
     queryset = Tag.objects.all()
     lookup_field = 'id'
@@ -37,18 +42,58 @@ class TagsViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
 class RecipesViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
     permission_classes = (OwnerOrReadOnly,)
-    queryset = Recipe.objects.all()
     lookup_field = 'id'
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
+    def get_queryset(self):
+        queryset = Recipe.objects.all()
+        is_favorited = self.request.query_params.get('is_favorited')
+        is_in_shopping_cart = self.request.query_params.get(
+            'is_in_shopping_cart'
+        )
+        author = self.request.query_params.get('author')
+        tags = self.request.query_params.getlist('tags')
+        if is_favorited:
+            favorit = Favourites.objects.filter(user=self.request.user)
+            favorit_recipe_id = []
+            for recipe in favorit:
+                favorit_recipe_id.append(recipe.recipes.id)
+            if is_favorited == '1':
+                queryset = queryset.filter(id__in=favorit_recipe_id)
+            if is_favorited == '0':
+                queryset = queryset.exclude(id__in=favorit_recipe_id)
+        if is_in_shopping_cart:
+            shopping_cart = Shopping_cart.objects.filter(
+                user=self.request.user
+            )
+            shopping_cart_recipe_id = []
+            for recipe in shopping_cart:
+                shopping_cart_recipe_id.append(recipe.recipes.id)
+            if is_in_shopping_cart == '1':
+                queryset = queryset.filter(id__in=shopping_cart_recipe_id)
+            if is_in_shopping_cart == '0':
+                queryset = queryset.exclude(id__in=shopping_cart_recipe_id)
+        if author:
+            author_db = get_object_or_404(User, id=author)
+            queryset = queryset.filter(author=author_db)
+        if tags:
+            for tag in tags:
+                tag_db = get_object_or_404(Tag, slug=tag)
+                queryset = queryset.filter(tags=tag_db)
+        return queryset
+
 
 class IngredientViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
     serializer_class = IngredientSerializer
     permission_classes = (AllowAny,)
+    pagination_class = None
     queryset = Ingredient.objects.all()
     lookup_field = 'id'
+    filter_backends = (DjangoFilterBackend, filters.SearchFilter)
+    filterset_fields = ('name',)
+    search_fields = ('name',)
 
 
 class FavouritesView(APIView):
@@ -103,7 +148,10 @@ class ShoppingCartView(APIView):
     def delete(self, request, **kwargs):
         recipe = get_object_or_404(Recipe, id=kwargs.get('id'))
         try:
-            follow = Shopping_cart.objects.get(user=request.user, recipes=recipe)
+            follow = Shopping_cart.objects.get(
+                user=request.user,
+                recipes=recipe
+            )
         except ObjectDoesNotExist:
             return JsonResponse(
                 {"errors": UNFAVORIT_ERROR},

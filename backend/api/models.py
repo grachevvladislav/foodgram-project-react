@@ -98,6 +98,9 @@ class Favourites(models.Model):
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранные'
 
+    def __str__(self):
+        return f'{self.user.username} {self.recipes.name}'
+
 
 class Shopping_cart(models.Model):
     user = models.ForeignKey(

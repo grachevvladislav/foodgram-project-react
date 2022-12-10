@@ -135,5 +135,9 @@ class SubscriptionsView(APIView, LimitOffsetPagination):
         for follow in user_follows:
             authors.append(follow.author)
         results = self.paginate_queryset(authors, request, view=self)
-        serializer = UserRecipeSerializer(results, many=True)
+        serializer = UserRecipeSerializer(
+            results,
+            context={'request': request},
+            many=True
+        )
         return self.get_paginated_response(serializer.data)

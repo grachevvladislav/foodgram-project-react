@@ -47,7 +47,12 @@ class RecipeSubscribeSerializer(serializers.ModelSerializer):
 
 class UserRecipeSerializer(UserSerializer):
     recipes_count = serializers.SerializerMethodField()
-    recipes = RecipeSubscribeSerializer(read_only=True, many=True)
+    recipes = serializers.SerializerMethodField()
+    # recipes = RecipeSubscribeSerializer(
+    #     read_only=True,
+    #     many=True,
+    #     source='author'
+    # )
 
     class Meta(UserSerializer.Meta):
         fields = (
@@ -57,6 +62,15 @@ class UserRecipeSerializer(UserSerializer):
 
     def get_recipes_count(self, author):
         return Recipe.objects.filter(author=author).count()
+
+    def get_recipes(self, author):
+        recipes = Recipe.objects.filter(author=author)
+        recipes_limit = self.context.get(
+            'request', None
+        ).query_params.get('recipes_limit')
+        if recipes_limit:
+            recipes = recipes[:int(recipes_limit)]
+        return RecipeSubscribeSerializer(recipes, many=True).data
 
 
 class LoginSerializer(serializers.Serializer):
