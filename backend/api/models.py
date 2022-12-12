@@ -1,3 +1,4 @@
+from django.core.validators import MinValueValidator
 from django.db import models
 
 from users.models import User
@@ -25,8 +26,8 @@ class Ingredient(models.Model):
 
     class Meta:
         ordering = ('name',)
-        verbose_name = 'Инградиент'
-        verbose_name_plural = 'Инградиенты'
+        verbose_name = 'Ингредиент'
+        verbose_name_plural = 'Ингредиенты'
 
     def __str__(self):
         return self.name
@@ -36,14 +37,14 @@ class IngredientAmount(models.Model):
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
-        related_name='ingredient',
+        related_name='amounts',
     )
     amount = models.IntegerField('Количество')
 
     class Meta:
         ordering = ('ingredient',)
-        verbose_name = 'Количество инградиента'
-        verbose_name_plural = 'Количество инградиентов'
+        verbose_name = 'Количество ингредиента'
+        verbose_name_plural = 'Количество ингредиентов'
 
     def __str__(self):
         return ' '.join([
@@ -57,12 +58,17 @@ class Recipe(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='author',
+        related_name='recipes',
     )
     name = models.TextField('Название', max_length=256)
     image = models.ImageField('Картинка', upload_to='recipes/')
     text = models.TextField('Описание', max_length=1000)
-    сooking_time = models.IntegerField('Время приготовления в минутах')
+    сooking_time = models.IntegerField(
+        'Время приготовления в минутах',
+        validators=[
+            MinValueValidator(1),
+        ]
+    )
     tags = models.ManyToManyField(Tag)
     ingredients = models.ManyToManyField(IngredientAmount)
 
@@ -75,7 +81,7 @@ class Recipe(models.Model):
         return self.name
 
 
-class Favourites(models.Model):
+class Favourite(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -91,7 +97,7 @@ class Favourites(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=['recipes', 'user'],
-                name='unique_follow'
+                name='unique_recipe'
             )
         ]
         ordering = ('user',)
@@ -102,7 +108,7 @@ class Favourites(models.Model):
         return f'{self.user.username} {self.recipes.name}'
 
 
-class Shopping_cart(models.Model):
+class ShoppingCart(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -118,7 +124,7 @@ class Shopping_cart(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=['recipes', 'user'],
-                name='unique_follow'
+                name='unique_shopping_cart'
             )
         ]
         ordering = ('user',)

@@ -91,7 +91,6 @@ def del_token_view(request):
         'Authorization'
     ).split(' ', 1)[1])
     token.blacklist()
-    print(request.headers)
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 

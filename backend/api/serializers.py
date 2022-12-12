@@ -1,23 +1,16 @@
-import base64
-
-from django.core.files.base import ContentFile
-from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
 from users.serializers import UserSerializer
 
-from .models import (Favourites, Ingredient, IngredientAmount, Recipe,
-                     Shopping_cart, Tag)
+from .fields import Base64ImageField
+from .models import (Favourite, Ingredient, IngredientAmount, Recipe,
+                     ShoppingCart, Tag)
 
 
 class TagsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = ('id', 'name', 'color', 'slug',)
-
-    def to_internal_value(self, data):
-        tag = get_object_or_404(Tag, id=data)
-        return tag
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -33,40 +26,15 @@ class RecipeSmallSerializer(serializers.ModelSerializer):
 
 
 class IngredientRecipeSerializer(serializers.ModelSerializer):
-    id = serializers.SerializerMethodField()
-    name = serializers.SerializerMethodField()
-    measurement_unit = serializers.SerializerMethodField()
+    id = serializers.IntegerField(source='ingredient.id')
+    name = serializers.CharField(source='ingredient.name')
+    measurement_unit = serializers.CharField(
+        source='ingredient.measurement_unit'
+    )
 
     class Meta:
         model = IngredientAmount
         fields = ('id', 'name', 'measurement_unit', 'amount')
-
-    def to_internal_value(self, data):
-        ingredient = get_object_or_404(Ingredient, id=data['id'])
-        ingredient_amount, status = IngredientAmount.objects.get_or_create(
-            ingredient=ingredient, amount=data['amount']
-        )
-        print(data)
-        print(ingredient_amount)
-        return ingredient_amount
-
-    def get_id(self, obj):
-        return obj.ingredient.id
-
-    def get_name(self, obj):
-        return obj.ingredient.name
-
-    def get_measurement_unit(self, obj):
-        return obj.ingredient.measurement_unit
-
-
-class Base64ImageField(serializers.ImageField):
-    def to_internal_value(self, data):
-        if isinstance(data, str) and data.startswith('data:image'):
-            format, imgstr = data.split(';base64,')
-            ext = format.split('/')[-1]
-            data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
-        return super().to_internal_value(data)
 
 
 class RecipeSerializer(serializers.ModelSerializer):
@@ -84,45 +52,41 @@ class RecipeSerializer(serializers.ModelSerializer):
             'is_in_shopping_cart', 'name', 'image', 'text', 'сooking_time'
         )
 
+    def addtagingredient(self, instance, tags_data, ingredients_data):
+        for object in tags_data:
+            instance.tags.add(object)
+        for object in ingredients_data:
+            instance.ingredients.add(object)
+        return instance
+
     def create(self, validated_data):
         ingredients_data = validated_data.pop('ingredients')
         tags_data = validated_data.pop('tags')
-        recipe = Recipe.objects.create(**validated_data)
-        for tag in tags_data:
-            recipe.tags.add(tag)
-        for ingredient in ingredients_data:
-            recipe.ingredients.add(ingredient)
-        return recipe
+        instance = Recipe.objects.create(**validated_data)
+        instance = self.addtagingredient(instance, tags_data, ingredients_data)
+        return instance
 
     def update(self, instance, validated_data):
-        instance.name = validated_data.get('name', instance.name)
-        instance.text = validated_data.get('text', instance.text)
-        instance.image = validated_data.get('image', instance.image)
-        instance.сooking_time = validated_data.get(
-            'сooking_time', instance.сooking_time
-        )
+        instance = super().update(self, instance, validated_data)
         ingredients_data = validated_data.pop('ingredients')
         tags_data = validated_data.pop('tags')
         instance.tags.clear()
         instance.ingredients.clear()
-        for tag in tags_data:
-            instance.tags.add(tag)
-        for ingredient in ingredients_data:
-            instance.ingredients.add(ingredient)
+        instance = self.addtagingredient(instance, tags_data, ingredients_data)
         return instance
 
     def get_is_favorited(self, recipe):
-        user = self.context.get('request', None).user
+        user = self.context.get('request').user
         if user.is_authenticated:
-            return Favourites.objects.filter(
+            return Favourite.objects.filter(
                 user=user, recipes=recipe
             ).exists()
         return False
 
     def get_is_in_shopping_cart(self, recipe):
-        user = self.context.get('request', None).user
+        user = self.context.get('request').user
         if user.is_authenticated:
-            return Shopping_cart.objects.filter(
+            return ShoppingCart.objects.filter(
                 user=user, recipes=recipe
             ).exists()
         return False

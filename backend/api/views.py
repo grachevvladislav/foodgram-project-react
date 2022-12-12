@@ -1,8 +1,6 @@
 import io
 
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.exceptions import ValidationError as ValidationError_db
-from django.http import FileResponse, JsonResponse
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
@@ -15,20 +13,23 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Sum
 
 from users.models import User
-
-from .models import Favourites, Ingredient, Recipe, Shopping_cart, Tag
+from .models import Favourite, Ingredient, Recipe, ShoppingCart, Tag
 from .permissions import OwnerOrReadOnly
 from .serializers import (IngredientSerializer, RecipeSerializer,
                           RecipeSmallSerializer, TagsSerializer)
+from .mixins import SaveMixin
 
-UNFAVORIT_ERROR = 'Этого рецепта нет в избранных!'
+CANT_DEL_FAVOURIT = 'Этого рецепта нет в Избранных!'
+CANT_DEL_CART = 'Этого рецепта нет в Списке покупок!'
+CANT_CREATE_FAVOURIT = 'Этот рецепт уже есть в Избранных!'
+CANT_CREATE_CART = 'Этот рецепт уже есть в Списке покупок!'
 
 
 class TagsViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
@@ -56,16 +57,17 @@ class RecipesViewSet(viewsets.ModelViewSet):
         author = self.request.query_params.get('author')
         tags = self.request.query_params.getlist('tags')
         if is_favorited:
-            favorit = Favourites.objects.filter(user=self.request.user)
-            favorit_recipe_id = []
-            for recipe in favorit:
-                favorit_recipe_id.append(recipe.recipes.id)
+            user_favorit = Favourite.objects.filter(user=self.request.user)
             if is_favorited == '1':
-                queryset = queryset.filter(id__in=favorit_recipe_id)
+                queryset = queryset.filter(
+                    id__in=user_favorit.values_list('recipes', flat=True)
+                )
             if is_favorited == '0':
-                queryset = queryset.exclude(id__in=favorit_recipe_id)
+                queryset = queryset.exclude(
+                    id__in=user_favorit.values_list('recipes', flat=True)
+                )
         if is_in_shopping_cart:
-            shopping_cart = Shopping_cart.objects.filter(
+            shopping_cart = ShoppingCart.objects.filter(
                 user=self.request.user
             )
             shopping_cart_recipe_id = []
@@ -96,94 +98,59 @@ class IngredientViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
     search_fields = ('name',)
 
 
-class FavouritesView(APIView):
+class FavouritesView(SaveMixin, APIView):
     permission_classes = [OwnerOrReadOnly]
 
     def post(self, request, **kwargs):
-        recipe = get_object_or_404(Recipe, id=kwargs.get('id'))
-        follow = Favourites(user=request.user, recipes=recipe)
-        try:
-            follow.full_clean()
-            follow.save()
-            pass
-        except ValidationError_db as e:
-            return JsonResponse(
-                {"errors": str(e.messages[0])},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        serializer = RecipeSmallSerializer(recipe)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return super().post(
+            Favourite, RecipeSmallSerializer, CANT_CREATE_FAVOURIT,
+            request, **kwargs
+        )
 
     def delete(self, request, **kwargs):
-        recipe = get_object_or_404(Recipe, id=kwargs.get('id'))
-        try:
-            follow = Favourites.objects.get(user=request.user, recipes=recipe)
-        except ObjectDoesNotExist:
-            return JsonResponse(
-                {"errors": UNFAVORIT_ERROR},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        follow.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return super().delete(
+            Favourite, CANT_CREATE_FAVOURIT, request, **kwargs
+        )
 
 
 class ShoppingCartView(APIView):
     permission_classes = [OwnerOrReadOnly]
 
     def post(self, request, **kwargs):
-        recipe = get_object_or_404(Recipe, id=kwargs.get('id'))
-        follow = Shopping_cart(user=request.user, recipes=recipe)
-        try:
-            follow.full_clean()
-            follow.save()
-            pass
-        except ValidationError_db as e:
-            return JsonResponse(
-                {"errors": str(e.messages[0])},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        serializer = RecipeSmallSerializer(recipe)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return super().post(
+            ShoppingCart, CANT_CREATE_CART, request, **kwargs
+        )
 
     def delete(self, request, **kwargs):
-        recipe = get_object_or_404(Recipe, id=kwargs.get('id'))
-        try:
-            follow = Shopping_cart.objects.get(
-                user=request.user,
-                recipes=recipe
-            )
-        except ObjectDoesNotExist:
-            return JsonResponse(
-                {"errors": UNFAVORIT_ERROR},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        follow.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return super().delete(
+            ShoppingCart, CANT_DEL_CART, request, **kwargs
+        )
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def download_shopping_cart(request):
     data = [['Название', 'Количество'],]
-    user_shopping_cart = Shopping_cart.objects.filter(user=request.user.id)
-    ingredients_dict = {}
-    for recipe in user_shopping_cart:
-        for ingredient in recipe.recipes.ingredients.all():
-            if ingredient.ingredient.id in ingredients_dict:
-                ingredients_dict[ingredient.ingredient.id] = [
-                    ingredient.ingredient.name,
-                    ingredient.amount + ingredients_dict[
-                        ingredient.ingredient.id
-                    ][1],
-                    ingredient.ingredient.measurement_unit
-                ]
-            else:
-                ingredients_dict[ingredient.ingredient.id] = [
-                    ingredient.ingredient.name,
-                    ingredient.amount,
-                    ingredient.ingredient.measurement_unit
-                ]
-    for key, value in ingredients_dict.items():
+    user_shopping_cart = ShoppingCart.objects.filter(user=request.user.id)
+    recipes = Recipe.objects.filter(
+        id__in=user_shopping_cart.values('recipes')
+    ).values(
+        'id',
+        'ingredients__ingredient__name',
+        #'ingredients__amount',
+        'ingredients__ingredient__measurement_unit'
+    ).annotate(totals=Sum('ingredients__amount'))
+
+
+    for recipe in recipes:
+        print(recipe)
+
+
+
+
+
+
+    for key, value in ingredients.items():
         data.append([value[0], f'{value[1]} {value[2]}'])
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)

@@ -1,7 +1,6 @@
 from rest_framework import serializers
 
 from api.models import Recipe
-
 from .mixins import UsernameMixins
 from .models import Follow, User
 
@@ -48,11 +47,6 @@ class RecipeSubscribeSerializer(serializers.ModelSerializer):
 class UserRecipeSerializer(UserSerializer):
     recipes_count = serializers.SerializerMethodField()
     recipes = serializers.SerializerMethodField()
-    # recipes = RecipeSubscribeSerializer(
-    #     read_only=True,
-    #     many=True,
-    #     source='author'
-    # )
 
     class Meta(UserSerializer.Meta):
         fields = (
