@@ -129,10 +129,10 @@ class SubscriptionsView(APIView, LimitOffsetPagination):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        user_follows = Follow.objects.filter(user=request.user.id)
-        authors = []
-        for follow in user_follows:
-            authors.append(follow.author)
+        user_subscribes = Follow.objects.filter(user=request.user)
+        authors = User.objects.filter(
+            id__in=user_subscribes.values_list('author__id', flat=True)
+        )
         results = self.paginate_queryset(authors, request, view=self)
         serializer = UserRecipeSerializer(
             results,
