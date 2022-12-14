@@ -1,7 +1,10 @@
 import io
 
+from django.db.models import CharField, F, Sum, Value
+from django.db.models.functions import Concat
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
@@ -9,22 +12,19 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate
 from reportlab.platypus.tables import Table, TableStyle, colors
-from rest_framework import status, viewsets
+from rest_framework import filters, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
-from rest_framework import filters
-from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Sum
 
 from users.models import User
+from .mixins import SaveMixin
 from .models import Favourite, Ingredient, Recipe, ShoppingCart, Tag
 from .permissions import OwnerOrReadOnly
 from .serializers import (IngredientSerializer, RecipeSerializer,
                           RecipeSmallSerializer, TagsSerializer)
-from .mixins import SaveMixin
 
 CANT_DEL_FAVOURIT = 'Этого рецепта нет в Избранных!'
 CANT_DEL_CART = 'Этого рецепта нет в Списке покупок!'
@@ -132,26 +132,21 @@ class ShoppingCartView(APIView):
 def download_shopping_cart(request):
     data = [['Название', 'Количество'],]
     user_shopping_cart = ShoppingCart.objects.filter(user=request.user.id)
-    recipes = Recipe.objects.filter(
+    ingredients = Recipe.objects.filter(
         id__in=user_shopping_cart.values('recipes')
-    ).values(
-        'id',
-        'ingredients__ingredient__name',
-        #'ingredients__amount',
-        'ingredients__ingredient__measurement_unit'
-    ).annotate(totals=Sum('ingredients__amount'))
-
-
-    for recipe in recipes:
-        print(recipe)
-
-
-
-
-
-
-    for key, value in ingredients.items():
-        data.append([value[0], f'{value[1]} {value[2]}'])
+    ).values_list(
+        'ingredients__ingredient__name'
+    ).order_by(
+        'ingredients__ingredient__name'
+    ).annotate(
+        amount=Concat(
+            Sum('ingredients__amount'),
+            Value(' '),
+            F('ingredients__ingredient__measurement_unit'),
+            output_field=CharField()
+        )
+    )
+    data += map(list, ingredients)
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
     c_width = [4 * inch, 3 * inch]

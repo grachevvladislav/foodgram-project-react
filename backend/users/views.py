@@ -22,7 +22,8 @@ from .tokens import JWTAccessToken
 
 WRONG_DATA = 'Неправильный email или пароль!'
 WRONG_PASSWORD = 'Неправильный пароль!'
-UNSUBSCRIBE_ERROR = 'Вы не были подписаны!'
+CANT_DEL_SUBSCRIBE = 'Этого автора нет в Подписках!'
+CANT_CREATE_SUBSCRIBE = 'Этот автор уже есть в Подписках!'
 
 
 class UsersViewSet(
@@ -50,7 +51,7 @@ class UsersViewSet(
 def get_token_view(request):
     serializer = LoginSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    user = get_object_or_404(User, email=serializer.data['email'])
+    user = get_object_or_404(User, email=serializer.validated_data['email'])
     if check_password(serializer.data['password'], user.password):
         token = JWTAccessToken.for_user(user)
         return JsonResponse(
@@ -75,10 +76,10 @@ def set_password(request):
     serializer = PasswordSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     if check_password(
-        serializer.data['current_password'],
+        serializer.validated_data['current_password'],
         request.user.password
     ):
-        request.user.set_password(serializer.data['new_password'])
+        request.user.set_password(serializer.validated_data['new_password'])
         request.user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
     raise ValidationError(WRONG_PASSWORD)
@@ -99,18 +100,17 @@ class SubscribeView(APIView):
 
     def post(self, request, **kwargs):
         author = get_object_or_404(User, id=kwargs.get('id'))
-        follow = Follow(user=request.user, author=author)
-        try:
-            follow.full_clean()
-            follow.save()
-            pass
-        except ValidationError_db as e:
-            return JsonResponse(
-                {"errors": str(e.messages[0])},
-                status=status.HTTP_400_BAD_REQUEST
+        follow, created = Follow(user=request.user, author=author)
+        if created:
+            serializer = UserRecipeSerializer(
+                author,
+                context={'request': request}
             )
-        serializer = UserRecipeSerializer(author, context={'request': request})
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return JsonResponse(
+            {"errors": CANT_CREATE_SUBSCRIBE},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
     def delete(self, request, **kwargs):
         author = get_object_or_404(User, id=kwargs.get('id'))
@@ -118,7 +118,7 @@ class SubscribeView(APIView):
             follow = Follow.objects.get(user=request.user, author=author)
         except ObjectDoesNotExist:
             return JsonResponse(
-                {"errors": UNSUBSCRIBE_ERROR},
+                {"errors": CANT_DEL_SUBSCRIBE},
                 status=status.HTTP_400_BAD_REQUEST
             )
         follow.delete()
