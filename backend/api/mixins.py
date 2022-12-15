@@ -1,4 +1,3 @@
-from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -11,7 +10,7 @@ from .serializers import RecipeSmallSerializer
 class SaveMixin:
     def post(self, model, serializer, message, request, **kwargs):
         recipe = get_object_or_404(Recipe, id=kwargs.get('id'))
-        follow, created = model.objects.get_or_create(
+        _, created = model.objects.get_or_create(
             user=request.user, recipes=recipe
         )
         if created:
@@ -29,7 +28,7 @@ class SaveMixin:
                 user=request.user,
                 recipes=recipe
             )
-        except ObjectDoesNotExist:
+        except model.DoesNotExist:
             return JsonResponse(
                 {"errors": message},
                 status=status.HTTP_400_BAD_REQUEST

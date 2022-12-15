@@ -70,13 +70,14 @@ class RecipesViewSet(viewsets.ModelViewSet):
             shopping_cart = ShoppingCart.objects.filter(
                 user=self.request.user
             )
-            shopping_cart_recipe_id = []
-            for recipe in shopping_cart:
-                shopping_cart_recipe_id.append(recipe.recipes.id)
             if is_in_shopping_cart == '1':
-                queryset = queryset.filter(id__in=shopping_cart_recipe_id)
+                queryset = queryset.filter(
+                    id__in=shopping_cart.values_list('recipes', flat=True)
+                )
             if is_in_shopping_cart == '0':
-                queryset = queryset.exclude(id__in=shopping_cart_recipe_id)
+                queryset = queryset.exclude(
+                    id__in=shopping_cart.values_list('recipes', flat=True)
+                )
         if author:
             author_db = get_object_or_404(User, id=author)
             queryset = queryset.filter(author=author_db)

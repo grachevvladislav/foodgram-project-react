@@ -1,7 +1,6 @@
 from rest_framework import serializers
 
 from users.serializers import UserSerializer
-
 from .fields import Base64ImageField
 from .models import (Favourite, Ingredient, IngredientAmount, Recipe,
                      ShoppingCart, Tag)
@@ -52,18 +51,20 @@ class RecipeSerializer(serializers.ModelSerializer):
             'is_in_shopping_cart', 'name', 'image', 'text', 'сooking_time'
         )
 
-    def addtagingredient(self, instance, tags_data, ingredients_data):
-        for object in tags_data:
-            instance.tags.add(object)
-        for object in ingredients_data:
-            instance.ingredients.add(object)
+    def add_tag_or_ingredient(self, instance, tags_data, ingredients_data):
+        for item in tags_data:
+            instance.tags.add(item)
+        for item in ingredients_data:
+            instance.ingredients.add(item)
         return instance
 
     def create(self, validated_data):
         ingredients_data = validated_data.pop('ingredients')
         tags_data = validated_data.pop('tags')
         instance = Recipe.objects.create(**validated_data)
-        instance = self.addtagingredient(instance, tags_data, ingredients_data)
+        instance = self.add_tag_or_ingredient(
+            instance, tags_data, ingredients_data
+        )
         return instance
 
     def update(self, instance, validated_data):
@@ -72,7 +73,9 @@ class RecipeSerializer(serializers.ModelSerializer):
         tags_data = validated_data.pop('tags')
         instance.tags.clear()
         instance.ingredients.clear()
-        instance = self.addtagingredient(instance, tags_data, ingredients_data)
+        instance = self.add_tag_or_ingredient(
+            instance, tags_data, ingredients_data
+        )
         return instance
 
     def get_is_favorited(self, recipe):

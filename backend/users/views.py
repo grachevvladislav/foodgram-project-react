@@ -52,7 +52,7 @@ def get_token_view(request):
     serializer = LoginSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     user = get_object_or_404(User, email=serializer.validated_data['email'])
-    if check_password(serializer.data['password'], user.password):
+    if check_password(serializer.validated_data['password'], user.password):
         token = JWTAccessToken.for_user(user)
         return JsonResponse(
             {"auth_token": str(token)},
@@ -100,7 +100,7 @@ class SubscribeView(APIView):
 
     def post(self, request, **kwargs):
         author = get_object_or_404(User, id=kwargs.get('id'))
-        follow, created = Follow(user=request.user, author=author)
+        _, created = Follow(user=request.user, author=author)
         if created:
             serializer = UserRecipeSerializer(
                 author,
@@ -116,7 +116,7 @@ class SubscribeView(APIView):
         author = get_object_or_404(User, id=kwargs.get('id'))
         try:
             follow = Follow.objects.get(user=request.user, author=author)
-        except ObjectDoesNotExist:
+        except Follow.DoesNotExist:
             return JsonResponse(
                 {"errors": CANT_DEL_SUBSCRIBE},
                 status=status.HTTP_400_BAD_REQUEST
