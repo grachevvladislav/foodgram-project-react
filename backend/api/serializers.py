@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.shortcuts import get_object_or_404
 
 from users.serializers import UserSerializer
 from .fields import Base64ImageField
@@ -10,6 +11,10 @@ class TagsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = ('id', 'name', 'color', 'slug',)
+
+    def to_internal_value(self, data):
+        tag = get_object_or_404(Tag, id=data)
+        return tag
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -35,6 +40,13 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
         model = IngredientAmount
         fields = ('id', 'name', 'measurement_unit', 'amount')
 
+    def to_internal_value(self, data):
+        ingredient = get_object_or_404(Ingredient, id=data['id'])
+        ingredient_amount, status = IngredientAmount.objects.get_or_create(
+            ingredient=ingredient, amount=data['amount']
+        )
+        return ingredient_amount
+
 
 class RecipeSerializer(serializers.ModelSerializer):
     tags = TagsSerializer(many=True)
@@ -42,7 +54,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
-    image = Base64ImageField(required=False, allow_null=True)
+    image = Base64ImageField(required=False)
 
     class Meta:
         model = Recipe
@@ -51,7 +63,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             'is_in_shopping_cart', 'name', 'image', 'text', 'сooking_time'
         )
 
-    def add_tag_or_ingredient(self, instance, tags_data, ingredients_data):
+    def add_tag_and_ingredient(self, instance, tags_data, ingredients_data):
         for item in tags_data:
             instance.tags.add(item)
         for item in ingredients_data:
@@ -62,7 +74,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         ingredients_data = validated_data.pop('ingredients')
         tags_data = validated_data.pop('tags')
         instance = Recipe.objects.create(**validated_data)
-        instance = self.add_tag_or_ingredient(
+        instance = self.add_tag_and_ingredient(
             instance, tags_data, ingredients_data
         )
         return instance
@@ -73,7 +85,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         tags_data = validated_data.pop('tags')
         instance.tags.clear()
         instance.ingredients.clear()
-        instance = self.add_tag_or_ingredient(
+        instance = self.add_tag_and_ingredient(
             instance, tags_data, ingredients_data
         )
         return instance
