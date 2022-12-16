@@ -13,6 +13,9 @@ class TagsSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'color', 'slug',)
 
     def to_internal_value(self, data):
+        """
+        При создании рецепта возвращает тег по его id.
+        """
         tag = get_object_or_404(Tag, id=data)
         return tag
 
@@ -41,6 +44,10 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'measurement_unit', 'amount')
 
     def to_internal_value(self, data):
+        """
+        При создании рецепта создает ингредиент-количества по id ингредиента
+        и его количеству. Возвращает объект IngredientAmount.
+        """
         ingredient = get_object_or_404(Ingredient, id=data['id'])
         ingredient_amount, status = IngredientAmount.objects.get_or_create(
             ingredient=ingredient, amount=data['amount']
