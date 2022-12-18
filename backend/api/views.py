@@ -131,7 +131,7 @@ class ShoppingCartView(APIView):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def download_shopping_cart(request):
-    data = [['Название', 'Количество'],]
+    data = [['Название', 'Количество'], ]
     user_shopping_cart = ShoppingCart.objects.filter(user=request.user.id)
     ingredients = Recipe.objects.filter(
         id__in=user_shopping_cart.values('recipes')

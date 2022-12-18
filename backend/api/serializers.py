@@ -16,8 +16,7 @@ class TagsSerializer(serializers.ModelSerializer):
         """
         При создании рецепта возвращает тег по его id.
         """
-        tag = get_object_or_404(Tag, id=data)
-        return tag
+        return get_object_or_404(Tag, id=data)
 
 
 class IngredientSerializer(serializers.ModelSerializer):

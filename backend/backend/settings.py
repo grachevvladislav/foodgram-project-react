@@ -106,8 +106,6 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
-    #"DEFAULT_PAGINATION_CLASS":
-    # "rest_framework.pagination.LimitOffsetPagination",
     "DEFAULT_PAGINATION_CLASS": "users.pagination.CustomPagination",
     "PAGE_SIZE": 5,
     'DEFAULT_FILTER_BACKENDS': [
@@ -128,4 +126,3 @@ AUTH_USER_MODEL = 'users.User'
 
 EMAIL_MAX_LENGTH = 254
 USERNAME_MAX_LENGTH = 150
-

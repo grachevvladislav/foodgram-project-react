@@ -1,6 +1,4 @@
 from django.contrib.auth.hashers import check_password, make_password
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.exceptions import ValidationError as ValidationError_db
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
