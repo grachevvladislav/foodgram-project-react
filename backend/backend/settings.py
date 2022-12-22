@@ -101,7 +101,7 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     'AUTH_TOKEN_CLASSES': ('users.tokens.JWTAccessToken',),
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
-    'AUTH_HEADER_TYPES': ('Token',),
+    'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
 STATIC_URL = '/static/'
