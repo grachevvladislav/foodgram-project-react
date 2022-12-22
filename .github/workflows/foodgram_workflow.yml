@@ -55,6 +55,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
+            cd infra
             sudo docker-compose stop
             sudo docker-compose rm web
             sudo docker image pull ${{ secrets.DOCKER_USERNAME }}/${{ github.event.repository.name }}:latest
