@@ -26,6 +26,6 @@ class FavouritesAdmin(admin.ModelAdmin):
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'text', 'author', 'сooking_time']
-    ordering = ['name', 'author', 'сooking_time']
+    list_display = ['id', 'name', 'text', 'author', 'cooking_time']
+    ordering = ['name', 'author', 'cooking_time']
     filter_horizontal = ['tags', 'ingredients']

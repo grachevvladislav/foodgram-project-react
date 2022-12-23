@@ -40,7 +40,7 @@ class RecipeSubscribeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = (
-            'id', 'name', 'image', 'сooking_time'
+            'id', 'name', 'image', 'cooking_time'
         )
 
 
