@@ -69,31 +69,32 @@ class RecipeSerializer(serializers.ModelSerializer):
             'is_in_shopping_cart', 'name', 'image', 'text', 'cooking_time'
         )
 
-    def add_tag_and_ingredient(self, instance, tags_data, ingredients_data):
-        for item in tags_data:
-            instance.tags.add(item)
-        for item in ingredients_data:
-            instance.ingredients.add(item)
-        return instance
+    def add_tag_or_ingredient(self, instance, validated_data, field):
+        data = validated_data.pop(field)
+        exec(f'instance.{field}.clear()')
+        for item in data:
+            exec(f'instance.{field}.add({item.id})')
+        return instance, validated_data
 
     def create(self, validated_data):
         ingredients_data = validated_data.pop('ingredients')
         tags_data = validated_data.pop('tags')
         instance = Recipe.objects.create(**validated_data)
-        instance = self.add_tag_and_ingredient(
+        instance = self.add_tag_or_ingredient(
             instance, tags_data, ingredients_data
         )
         return instance
 
     def update(self, instance, validated_data):
-        instance = super().update(self, instance, validated_data)
-        ingredients_data = validated_data.pop('ingredients')
-        tags_data = validated_data.pop('tags')
-        instance.tags.clear()
-        instance.ingredients.clear()
-        instance = self.add_tag_and_ingredient(
-            instance, tags_data, ingredients_data
-        )
+        if 'ingredients' in validated_data:
+            instance, validated_data = self.add_tag_or_ingredient(
+                instance, validated_data, 'ingredients'
+            )
+        if 'tags' in validated_data:
+            instance, validated_data = self.add_tag_or_ingredient(
+                instance, validated_data, 'tags'
+            )
+        instance = super().update(instance, validated_data)
         return instance
 
     def get_is_favorited(self, recipe):
