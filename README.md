@@ -6,10 +6,12 @@
 «Избранное», а перед походом в магазин скачивать сводный список продуктов, 
 необходимых для приготовления одного или нескольких выбранных блюд.
 
+### Развернутый проект:
+[Foodgram](http://vlad.360.ru)
+admin / admin
 
 
 ### Разработчик проекта
 - [Владислав Грачев](https://github.com/grachevvladislav)
-- # praktikum_new_diplom
 
 ![yamdb](https://github.com/grachevvladislav/foodgram-project-react/actions/workflows/foodgram_workflow.yml/badge.svg)

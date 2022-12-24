@@ -98,7 +98,9 @@ class SubscribeView(APIView):
 
     def post(self, request, **kwargs):
         author = get_object_or_404(User, id=kwargs.get('id'))
-        _, created = Follow(user=request.user, author=author)
+        _, created = Follow.objects.get_or_create(
+            user=request.user, author=author
+        )
         if created:
             serializer = UserRecipeSerializer(
                 author,
