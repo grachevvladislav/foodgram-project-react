@@ -114,12 +114,13 @@ class FavouritesView(SaveMixin, APIView):
         )
 
 
-class ShoppingCartView(APIView):
+class ShoppingCartView(SaveMixin, APIView):
     permission_classes = [OwnerOrReadOnly]
 
     def post(self, request, **kwargs):
         return super().post(
-            ShoppingCart, CANT_CREATE_CART, request, **kwargs
+            ShoppingCart, RecipeSmallSerializer, CANT_CREATE_CART,
+            request, **kwargs
         )
 
     def delete(self, request, **kwargs):
