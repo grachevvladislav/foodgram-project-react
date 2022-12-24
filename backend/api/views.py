@@ -4,7 +4,6 @@ from django.db.models import CharField, F, Sum, Value
 from django.db.models.functions import Concat
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import DjangoFilterBackend
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
@@ -18,6 +17,7 @@ from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
+from itertools import chain
 
 from users.models import User
 from .mixins import SaveMixin
@@ -90,11 +90,22 @@ class IngredientViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
     serializer_class = IngredientSerializer
     permission_classes = (AllowAny,)
     pagination_class = None
-    queryset = Ingredient.objects.all()
     lookup_field = 'id'
-    filter_backends = (DjangoFilterBackend, filters.SearchFilter)
-    filterset_fields = ('name',)
-    search_fields = ('name',)
+
+    def get_queryset(self):
+        queryset = Ingredient.objects.all()
+        name = self.request.query_params.get('name')
+        if name:
+            queryset = chain(
+                queryset.filter(name__startswith=name),
+                queryset.filter(
+                    name__contains=name
+                ).exclude(
+                    name__startswith=name
+                )
+            )
+
+        return queryset
 
 
 class FavouritesView(SaveMixin, APIView):
