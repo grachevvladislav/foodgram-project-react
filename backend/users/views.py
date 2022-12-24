@@ -107,7 +107,9 @@ class SubscribeView(APIView):
                     author,
                     context={'request': request}
                 )
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                return Response(
+                    serializer.data, status=status.HTTP_201_CREATED
+                )
         return JsonResponse(
             {"errors": CANT_CREATE_SUBSCRIBE},
             status=status.HTTP_400_BAD_REQUEST
