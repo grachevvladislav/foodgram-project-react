@@ -98,15 +98,16 @@ class SubscribeView(APIView):
 
     def post(self, request, **kwargs):
         author = get_object_or_404(User, id=kwargs.get('id'))
-        _, created = Follow.objects.get_or_create(
-            user=request.user, author=author
-        )
-        if created:
-            serializer = UserRecipeSerializer(
-                author,
-                context={'request': request}
+        if author != request.user:
+            _, created = Follow.objects.get_or_create(
+                user=request.user, author=author
             )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            if created:
+                serializer = UserRecipeSerializer(
+                    author,
+                    context={'request': request}
+                )
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
         return JsonResponse(
             {"errors": CANT_CREATE_SUBSCRIBE},
             status=status.HTTP_400_BAD_REQUEST
