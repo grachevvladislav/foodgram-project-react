@@ -82,9 +82,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
             author_db = get_object_or_404(User, id=author)
             queryset = queryset.filter(author=author_db)
         if tags:
-            for tag in tags:
-                tag_db = get_object_or_404(Tag, slug=tag)
-                queryset = queryset.filter(tags=tag_db)
+            queryset = queryset.filter(tags__slug__in=tags).distinct()
         return queryset
 
 
