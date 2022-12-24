@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Follow, User
+from .pagination import CustomPagination
 from .permissions import IsSafeOrPost
 from .serializers import (LoginSerializer, PasswordSerializer,
                           UserPostSerializer, UserRecipeSerializer,
@@ -125,7 +126,7 @@ class SubscribeView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class SubscriptionsView(APIView, LimitOffsetPagination):
+class SubscriptionsView(APIView, CustomPagination):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
