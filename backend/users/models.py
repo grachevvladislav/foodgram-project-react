@@ -11,13 +11,13 @@ SELF_FOLLOW = 'Нельзя подписаться на самого себя!'
 class User(AbstractUser):
     username = models.CharField(
         'Имя пользователя',
-        max_length=settings.USERNAME_MAX_LENGTH,
+        max_length=150,
         unique=True,
-        validators=[username_validator]
+        validators=[username_validator],
     )
     email = models.EmailField(
         'Электронная почта',
-        max_length=settings.EMAIL_MAX_LENGTH,
+        max_length=254,
         unique=True
     )
     first_name = models.CharField('Имя', max_length=150, blank=True)

@@ -5,11 +5,11 @@ from users.models import User
 
 
 class Tag(models.Model):
-    name = models.TextField('Название', max_length=256, unique=True)
+    name = models.TextField('Название', max_length=200, unique=True)
     color = models.TextField(
         'Цвет', max_length=7, unique=True, default="#ffffff"
     )
-    slug = models.TextField('Идентификатор', max_length=256, unique=True)
+    slug = models.TextField('Идентификатор', max_length=200, unique=True)
 
     class Meta:
         ordering = ('name',)
@@ -60,9 +60,9 @@ class Recipe(models.Model):
         on_delete=models.CASCADE,
         related_name='recipes',
     )
-    name = models.TextField('Название', max_length=256)
+    name = models.TextField('Название', max_length=200)
     image = models.ImageField('Картинка', upload_to='recipes/')
-    text = models.TextField('Описание', max_length=1000)
+    text = models.TextField('Описание')
     cooking_time = models.IntegerField(
         'Время приготовления в минутах',
         validators=[
