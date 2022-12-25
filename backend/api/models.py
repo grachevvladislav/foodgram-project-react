@@ -39,10 +39,7 @@ class IngredientAmount(models.Model):
         on_delete=models.CASCADE,
         related_name='amounts',
     )
-    amount = models.IntegerField(
-        'Количество',
-        validators=[MinValueValidator(0), ]
-    )
+    amount = models.PositiveIntegerField('Количество')
 
     class Meta:
         ordering = ('ingredient',)
@@ -66,12 +63,7 @@ class Recipe(models.Model):
     name = models.TextField('Название', max_length=200)
     image = models.ImageField('Картинка', upload_to='recipes/')
     text = models.TextField('Описание')
-    cooking_time = models.IntegerField(
-        'Время приготовления в минутах',
-        validators=[
-            MinValueValidator(1),
-        ]
-    )
+    cooking_time = models.PositiveIntegerField('Время приготовления в минутах')
     tags = models.ManyToManyField(Tag)
     ingredients = models.ManyToManyField(IngredientAmount)
 
