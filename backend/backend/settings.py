@@ -9,7 +9,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = os.getenv('SECRET_KEY', '-h%*u3fxg_57j^e_-eby2u^^@*z!@qz))l!tav2^9^0zzxa40_')
 
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -119,3 +119,12 @@ AUTH_USER_MODEL = 'users.User'
 
 EMAIL_MAX_LENGTH = 254
 USERNAME_MAX_LENGTH = 150
+
+RECIPE_NAME_MAX_LENGTH = 200
+
+INGREDIENT_NAME_MAX_LENGTH = 200
+INGREDIENT_MEASUREMENT_UNIT_MAX_LENGTH = 200
+
+TAG_NAME_MAX_LENGTH = 200
+TAG_COLOR_MAX_LENGTH = 7
+TAG_SLUG_MAX_LENGTH = 200

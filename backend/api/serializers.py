@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
+from django.conf import settings
 
 from users.serializers import UserSerializer
 from .fields import Base64ImageField
@@ -61,6 +62,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
     image = Base64ImageField()
+    name = serializers.CharField(max_length=settings.RECIPE_NAME_MAX_LENGTH)
 
     class Meta:
         model = Recipe

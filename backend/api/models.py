@@ -1,14 +1,29 @@
 from django.db import models
+from django.conf import settings
+from django.core.validators import MinValueValidator
 
 from users.models import User
+from .validators import slug_validator
 
 
 class Tag(models.Model):
-    name = models.TextField('Название', max_length=200, unique=True)
-    color = models.TextField(
-        'Цвет', max_length=7, unique=True, default="#ffffff"
+    name = models.TextField(
+        'Название',
+        max_length=settings.TAG_NAME_MAX_LENGTH,
+        unique=True
     )
-    slug = models.TextField('Идентификатор', max_length=200, unique=True)
+    color = models.TextField(
+        'Цвет',
+        max_length=settings.TAG_COLOR_MAX_LENGTH,
+        unique=True,
+        default="#ffffff"
+    )
+    slug = models.TextField(
+        'Идентификатор',
+        max_length=settings.TAG_SLUG_MAX_LENGTH,
+        unique=True,
+        validators=[slug_validator]
+    )
 
     class Meta:
         ordering = ('name',)
@@ -20,8 +35,14 @@ class Tag(models.Model):
 
 
 class Ingredient(models.Model):
-    name = models.TextField('Название', max_length=256)
-    measurement_unit = models.TextField('Единица измерения', max_length=16)
+    name = models.TextField(
+        'Название',
+        max_length=settings.INGREDIENT_NAME_MAX_LENGTH
+    )
+    measurement_unit = models.TextField(
+        'Единица измерения',
+        max_length=settings.INGREDIENT_MEASUREMENT_UNIT_MAX_LENGTH
+    )
 
     class Meta:
         ordering = ('name',)
@@ -38,7 +59,12 @@ class IngredientAmount(models.Model):
         on_delete=models.CASCADE,
         related_name='amounts',
     )
-    amount = models.PositiveIntegerField('Количество')
+    amount = models.PositiveIntegerField(
+        'Количество',
+        validators=[
+            MinValueValidator(1)
+        ]
+    )
 
     class Meta:
         ordering = ('ingredient',)
@@ -59,15 +85,23 @@ class Recipe(models.Model):
         on_delete=models.CASCADE,
         related_name='recipes',
     )
-    name = models.TextField('Название', max_length=200)
+    name = models.TextField(
+        'Название',
+        max_length=settings.RECIPE_NAME_MAX_LENGTH
+    )
     image = models.ImageField('Картинка', upload_to='recipes/')
     text = models.TextField('Описание')
-    cooking_time = models.PositiveIntegerField('Время приготовления в минутах')
+    cooking_time = models.IntegerField(
+        'Время приготовления в минутах',
+        validators=[
+            MinValueValidator(1)
+        ]
+    )
     tags = models.ManyToManyField(Tag)
     ingredients = models.ManyToManyField(IngredientAmount)
 
     class Meta:
-        ordering = ('name',)
+        ordering = ('-id',)
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
 
