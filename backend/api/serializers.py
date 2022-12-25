@@ -1,6 +1,7 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from django.conf import settings
+from django.core.validators import MinValueValidator
 
 from users.serializers import UserSerializer
 from .fields import Base64ImageField
@@ -9,6 +10,10 @@ from .models import (Favourite, Ingredient, IngredientAmount, Recipe,
 
 
 class TagsSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(max_length=settings.TAG_NAME_MAX_LENGTH)
+    color = serializers.CharField(max_length=settings.TAG_COLOR_MAX_LENGTH)
+    slug = serializers.CharField(max_length=settings.TAG_SLUG_MAX_LENGTH)
+
     class Meta:
         model = Tag
         fields = ('id', 'name', 'color', 'slug',)
@@ -34,9 +39,13 @@ class RecipeSmallSerializer(serializers.ModelSerializer):
 
 class IngredientRecipeSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='ingredient.id')
-    name = serializers.CharField(source='ingredient.name')
+    name = serializers.CharField(
+        source='ingredient.name',
+        max_length=settings.INGREDIENT_NAME_MAX_LENGTH
+    )
     measurement_unit = serializers.CharField(
-        source='ingredient.measurement_unit'
+        source='ingredient.measurement_unit',
+        max_length=settings.INGREDIENT_MEASUREMENT_UNIT_MAX_LENGTH
     )
 
     class Meta:
@@ -63,6 +72,9 @@ class RecipeSerializer(serializers.ModelSerializer):
     is_in_shopping_cart = serializers.SerializerMethodField()
     image = Base64ImageField()
     name = serializers.CharField(max_length=settings.RECIPE_NAME_MAX_LENGTH)
+    cooking_time = serializers.IntegerField(
+        validators=[MinValueValidator(1), ]
+    )
 
     class Meta:
         model = Recipe

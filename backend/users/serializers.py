@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from django.conf import settings
+from django.core.validators import MinValueValidator
 
 from api.models import Recipe
 from .mixins import UsernameMixins
@@ -6,6 +8,13 @@ from .models import Follow, User
 
 
 class UserPostSerializer(serializers.ModelSerializer, UsernameMixins):
+    username = serializers.CharField(max_length=settings.USERNAME_MAX_LENGTH)
+    first_name = serializers.CharField(
+        max_length=settings.FIRST_NAME_MAX_LENGTH
+    )
+    last_name = serializers.CharField(max_length=settings.LAST_NAME_MAX_LENGTH)
+    password = serializers.CharField(max_length=settings.PASSWORD_MAX_LENGTH)
+
     class Meta:
         model = User
         fields = (
@@ -37,6 +46,11 @@ class UserSerializer(serializers.ModelSerializer, UsernameMixins):
 
 
 class RecipeSubscribeSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(max_length=settings.RECIPE_NAME_MAX_LENGTH)
+    cooking_time = serializers.IntegerField(
+        validators=[MinValueValidator(1), ]
+    )
+
     class Meta:
         model = Recipe
         fields = (
@@ -47,6 +61,8 @@ class RecipeSubscribeSerializer(serializers.ModelSerializer):
 class UserRecipeSerializer(UserSerializer):
     recipes_count = serializers.SerializerMethodField()
     recipes = serializers.SerializerMethodField()
+    email = serializers.EmailField(max_length=settings.EMAIL_MAX_LENGTH)
+    username = serializers.CharField(max_length=settings.USERNAME_MAX_LENGTH)
 
     class Meta(UserSerializer.Meta):
         fields = (
@@ -69,7 +85,7 @@ class UserRecipeSerializer(UserSerializer):
 
 class LoginSerializer(serializers.Serializer):
     password = serializers.CharField()
-    email = serializers.EmailField()
+    email = serializers.EmailField(max_length=settings.EMAIL_MAX_LENGTH)
 
 
 class PasswordSerializer(serializers.Serializer):
