@@ -39,7 +39,10 @@ class IngredientAmount(models.Model):
         on_delete=models.CASCADE,
         related_name='amounts',
     )
-    amount = models.IntegerField('Количество')
+    amount = models.IntegerField(
+        'Количество',
+        validators=[MinValueValidator(0), ]
+    )
 
     class Meta:
         ordering = ('ingredient',)
