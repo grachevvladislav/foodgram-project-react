@@ -13,8 +13,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-SITE_URL = 'http://vlad.360.ru'
-
 INSTALLED_APPS = [
     'api.apps.ApiConfig',
     'users.apps.UsersConfig',

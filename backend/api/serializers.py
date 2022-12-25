@@ -45,7 +45,8 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
     )
     measurement_unit = serializers.CharField(
         source='ingredient.measurement_unit',
-        max_length=settings.INGREDIENT_MEASUREMENT_UNIT_MAX_LENGTH
+        max_length=settings.INGREDIENT_MEASUREMENT_UNIT_MAX_LENGTH,
+        validators=[MinValueValidator(1), ]
     )
 
     class Meta:
