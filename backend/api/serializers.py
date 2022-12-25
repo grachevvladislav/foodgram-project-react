@@ -40,10 +40,12 @@ class RecipeSmallSerializer(serializers.ModelSerializer):
 class IngredientRecipeSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='ingredient.id')
     name = serializers.CharField(
+        read_only=True,
         source='ingredient.name',
         max_length=settings.INGREDIENT_NAME_MAX_LENGTH
     )
     measurement_unit = serializers.CharField(
+        read_only=True,
         source='ingredient.measurement_unit',
         max_length=settings.INGREDIENT_MEASUREMENT_UNIT_MAX_LENGTH
     )
@@ -54,17 +56,6 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = IngredientAmount
         fields = ('id', 'name', 'measurement_unit', 'amount')
-
-    def to_internal_value(self, data):
-        """
-        При создании рецепта создает ингредиент-количества по id ингредиента
-        и его количеству. Возвращает объект IngredientAmount.
-        """
-        ingredient = get_object_or_404(Ingredient, id=data['id'])
-        ingredient_amount, status = IngredientAmount.objects.get_or_create(
-            ingredient=ingredient, amount=data['amount']
-        )
-        return ingredient_amount
 
 
 class RecipeSerializer(serializers.ModelSerializer):
@@ -86,34 +77,35 @@ class RecipeSerializer(serializers.ModelSerializer):
             'is_in_shopping_cart', 'name', 'image', 'text', 'cooking_time'
         )
 
-    def add_tag_or_ingredient(self, instance, data, field):
-        exec(f'instance.{field}.clear()')
-        for item in data:
-            exec(f'instance.{field}.add({item.id})')
+    def add_ingredients(self, instance, ingredients_data):
+        for ingredient_amount in ingredients_data:
+            ingredient = get_object_or_404(
+                Ingredient, id=ingredient_amount['ingredient']['id']
+            )
+            amount, _ = IngredientAmount.objects.get_or_create(
+                ingredient=ingredient,
+                amount=ingredient_amount['amount']
+            )
+            instance.ingredients.add(amount)
         return instance
 
     def create(self, validated_data):
         ingredients_data = validated_data.pop('ingredients')
         tags_data = validated_data.pop('tags')
         instance = Recipe.objects.create(**validated_data)
-
-        instance = self.add_tag_or_ingredient(
-            instance, ingredients_data, 'ingredients'
-        )
-        instance = self.add_tag_or_ingredient(
-            instance, tags_data, 'tags'
-        )
+        instance.tags.add(*tags_data)
+        instance = self.add_ingredients(instance, ingredients_data)
         return instance
 
     def update(self, instance, validated_data):
         if 'ingredients' in validated_data:
-            data = validated_data.pop('ingredients')
-            instance = self.add_tag_or_ingredient(
-                instance, data, 'ingredients'
-            )
+            ingredients_data = validated_data.pop('ingredients')
+            instance.ingredients.clear()
+            instance = self.add_ingredients(instance, ingredients_data)
         if 'tags' in validated_data:
-            data = validated_data.pop('tags')
-            instance = self.add_tag_or_ingredient(instance, data, 'tags')
+            tags_data = validated_data.pop('tags')
+            instance.tags.clear()
+            instance.tags.add(*tags_data)
         instance = super().update(instance, validated_data)
         return instance
 
