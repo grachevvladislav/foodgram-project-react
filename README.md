@@ -27,8 +27,7 @@ https://github.com/grachevvladislav/foodgram-project-react.git
 sudo docker-compose up -d
 ```
 ### Развернутый проект:
-[Foodgram](http://vlad.360.ru)
-admin / admin
+
 
 ### Разработчик проекта
 - [Владислав Грачев](https://github.com/grachevvladislav)
